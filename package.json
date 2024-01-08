@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Create playlist from local video files",
   "main": "playlist.js",
+  "bin": {
+    "playlist": "./playlist.js"
+  },
   "author": "Neon Fish",
   "license": "MIT",
   "scripts": {
