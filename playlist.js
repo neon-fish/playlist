@@ -12,10 +12,12 @@ const m3uFile = 'playlist.m3u';
 const port = process.argv.includes('-p') ? process.argv[process.argv.indexOf('-p') + 1] : 2222;
 // Check if '-r' flag is present
 const isRecursive = process.argv.includes('-r');
+const isVerbose = process.argv.includes('-v');
 
 console.log(`Running server with options:
-- Port: ${port}
-- Recursive search: ${isRecursive ? 'Enabled' : 'Disabled'}
+-p > port: ${port}
+-r > recursive search: ${isRecursive ? 'enabled' : 'disabled'}
+-v > verbose logging: ${isVerbose ? 'enabled' : 'disabled'}
 `);
 
 async function findVideos(dir, recursive) {
@@ -40,6 +42,8 @@ async function main() {
     if (videoFiles.length === 0) {
       console.log('No video files found.');
       return;
+    } else {
+      console.log(`Found video files: ${videoFiles.length}`);
     }
 
     // build .m3u file
@@ -50,7 +54,8 @@ async function main() {
     // start web server
     http.createServer(async (req, res) => {
       const reqUrl = url.parse(req.url, true);
-      const filePath = '.' + reqUrl.pathname;
+      const filePath = decodeURIComponent('.' + reqUrl.pathname).replace(/\\/g, "/");
+      isVerbose && console.log(`REQ: "${filePath}"`);
       try {
         const data = await fs.readFile(filePath);
         res.writeHead(200);
@@ -58,6 +63,7 @@ async function main() {
       } catch (err) {
         res.writeHead(404);
         res.end(JSON.stringify(err));
+        console.error(JSON.stringify(err));
         return;
       }
     }).listen(port, () => {
