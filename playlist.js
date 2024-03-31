@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const http = require('http');
 const url = require('url');
 const path = require('path');
+const stat = fs.stat;
 
 const videoExtensions = ['mp4', 'mkv', 'flv', 'avi', 'mov', 'wmv', "webm"];  // common video file extensions
 const m3uFile = 'playlist.m3u';
@@ -24,12 +25,23 @@ async function findVideos(dir, recursive) {
   let videoFiles = [];
   const files = await fs.readdir(dir);
   for (let file of files) {
-    const filePath = path.join(dir, file);
-    const stat = await fs.stat(filePath);
-    if (stat.isDirectory() && recursive) {
-      videoFiles = videoFiles.concat(await findVideos(filePath, recursive));
-    } else if (videoExtensions.includes(file.split('.').pop())) {
-      videoFiles.push(filePath);
+    try {
+      const filePath = path.join(dir, file);
+      if (!filePath) {
+        isVerbose && console.log(`File "${file}" not found in dir "${dir}"`);
+        continue;
+      }
+      const stats = await stat(filePath);
+      const isDir = stats.isDirectory();
+      if (isDir && recursive) {
+        videoFiles = videoFiles.concat(await findVideos(filePath, recursive));
+      } else if (videoExtensions.includes(file.split('.').pop())) {
+        videoFiles.push(filePath);
+      }
+    } catch (error) {
+      console.error(`Error reading files in dir: "${dir}", file: "${file}"`);
+      console.error(`Error:`, error);
+      console.error();
     }
   }
   return videoFiles;
